@@ -41,10 +41,9 @@ cleanTable <- function(synId){
   for(i in stringCols){
     df[[i]] <- cleanString(df[[i]])
   }
-  df$externalId <- NULL
-  df$dataGroups <- NULL
-  df$uploadDate <- NULL
-  
+  remCols <- c("externalId", "dataGroups", "uploadDate")
+  df <- df[, -which(names(df) %in% remCols)]
+
   dfSub <- df[, setdiff(names(df), coreNames)]
   dfIdx <- rowSums(is.na(dfSub)) != ncol(dfSub)
   df <- df[ dfIdx, ]
@@ -76,13 +75,13 @@ activitySleep <- cleanTable("syn3420264")
 ## RISK FACTOR SURVEY
 # syn3420385
 # syn4703171
-riskFactor1 <- cleanTable("syn3420385")
-riskFactor2 <- cleanTable("syn4703171")
-for(cc in setdiff(names(riskFactor2$data), names(riskFactor1$data))){
-  riskFactor1$data[[cc]] <- NA
+rf1 <- cleanTable("syn3420385")
+rf2 <- cleanTable("syn4703171")
+for(cc in setdiff(names(rf2$data), names(rf1$data))){
+  rf1$data[[cc]] <- NA
 }
-riskFactor <- list(data=rbind(riskFactor1$data, riskFactor2$data),
-                   fhCols=riskFactor2$fhCols)
+riskFactor <- list(data=rbind(rf1$data, rf2$data),
+                   fhCols=rf2$fhCols)
 
 ## CARDIO DIET SURVEY
 # syn3420518
@@ -91,31 +90,36 @@ cardioDiet <- cleanTable("syn3420518")
 ## SATISFIED SURVEY
 # syn3420615
 # syn4857042
-satisfied1 <- cleanTable("syn3420615")
-satisfied2 <- cleanTable("syn4857042")
-satisfied <- list(data=rbind(satisfied1$data, satisfied2$data),
-                  fhCols=satisfied2$fhCols)
+sf1 <- cleanTable("syn3420615")
+sf2 <- cleanTable("syn4857042")
+satisfied <- list(data=rbind(sf1$data, sf2$data),
+                  fhCols=sf2$fhCols)
 
 ## SIX MINUTE WALK TASK
 # syn3458480
 # syn4857044
-smWalk1 <- cleanTable("syn3458480")
-smWalk2 <- cleanTable("syn4857044")
-for(cc in setdiff(names(smWalk2$data), names(smWalk1$data))){
-  smWalk1$data[[cc]] <- NA
+sm1 <- cleanTable("syn3458480")
+sm2 <- cleanTable("syn4857044")
+for(cc in setdiff(names(sm2$data), names(sm1$data))){
+  sm1$data[[cc]] <- NA
 }
-smWalk <- list(data=rbind(smWalk1$data, smWalk2$data),
-                   fhCols=smWalk2$fhCols)
-
+smWalk <- list(data=rbind(sm1$data, sm2$data),
+                   fhCols=sm2$fhCols)
 
 ## APH HEART AGE SURVEY
 # syn3458936
 # syn4586968
+aph1 <- cleanTable("syn3458936")
+aph2 <- cleanTable("syn4586968")
+heartAge <- list(data=rbind(aph1$data, aph2$data),
+                 fhCols=aph2$fhCols)
 
 ## DEMOGRAPHICS
 # syn3917840
-
-
+demographics <- cleanTable("syn3917840")
+names(demographics$data) <- sub("NonIdentifiableDemographics.json.", "", names(demographics$data), fixed=TRUE)
+notThese <- grep("NonIdentifiableDemographics.", names(demographics$data), fixed=TRUE)
+demographics$data <- demographics$data[, -notThese]
 
 
 
