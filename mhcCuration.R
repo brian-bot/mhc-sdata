@@ -1,5 +1,4 @@
-# require(synapseClient)
-require(synapser)
+require(synapseClient)
 synapseLogin()
 
 ## x IS EXPECTED TO BE A CHARACTER VECTOR TO BE CLEANED UP
@@ -73,7 +72,7 @@ cleanTable <- function(synId, strictVersion=TRUE){
   df[ order(df$createdOn), ]
   
   tb@values <- df
-  return(list(table=tb, fhCols=fhCols))
+  return(list(table=tb, fhCols=fhCols, fhToUpload=FALSE))
 }
 
 
@@ -144,11 +143,6 @@ demographics$table@values$patientGoSleepTime <- substr(demographics$table@values
 
 
 
-
-
-
-
-
 ## HealthKitDataCollector
 hkData <- cleanTable('syn3560085', strictVersion=FALSE)
 hkData$table@values <- hkData$table@values[ !is.na(hkData$table@values$data.csv), ]
@@ -156,7 +150,6 @@ hkDataFiles <- synDownloadTableColumns(hkData$table, "data.csv")
 hkDataFiles <- as.data.frame(as.character(hkDataFiles), stringsAsFactors = FALSE)
 names(hkDataFiles) <- "data.csv"
 hkDataFiles$recordId <- hkData$table@values$recordId
-# hkDataFilesNew <- sapply(1:700, function(x){
 hkDataFilesNew <- sapply(1:nrow(hkDataFiles), function(x){
   a <- try(read.csv(hkDataFiles$data.csv[x], stringsAsFactors=FALSE), silent=TRUE)
   if( class(tryCatch) == "try-error" ){
@@ -194,6 +187,11 @@ hkDataFilesNew <- sapply(1:nrow(hkDataFiles), function(x){
 })
 hkDataFiles$newFile <- hkDataFilesNew
 hkDataFiles <- hkDataFiles[ !is.na(hkDataFiles$newFile), ]
+rownames(hkDataFiles) <- hkDataFiles$recordId
+## UPDATE THE ORIGINAL TABLE
+hkData$fhToUpload <- TRUE
+hkData$table@values <- hkData$table@values[ hkData$table@values$recordId %in% hkDataFiles$recordId, ]
+hkData$table@values$data.csv <- hkDataFiles[ hkData$table@values$recordId, "newFile"]
 
 
 ## HealthKitSleepCollector
@@ -247,6 +245,11 @@ hkSleepFilesNew <- sapply(1:nrow(hkSleepFiles), function(x){
 })
 hkSleepFiles$newFile <- hkSleepFilesNew
 hkSleepFiles <- hkSleepFiles[ !is.na(hkSleepFiles$newFile), ]
+rownames(hkSleepFiles) <- hkSleepFiles$recordId
+## UPDATE THE ORIGINAL TABLE
+hkSleep$fhToUpload <- TRUE
+hkSleep$table@values <- hkSleep$table@values[ hkSleep$table@values$recordId %in% hkSleepFiles$recordId, ]
+hkSleep$table@values$data.csv <- hkSleepFiles[ hkSleep$table@values$recordId, "newFile"]
 
 
 ## HealthKitWorkoutCollector
@@ -294,6 +297,11 @@ hkWorkoutFilesNew <- sapply(1:nrow(hkWorkoutFiles), function(x){
 })
 hkWorkoutFiles$newFile <- hkWorkoutFilesNew
 hkWorkoutFiles <- hkWorkoutFiles[ !is.na(hkWorkoutFiles$newFile), ]
+rownames(hkWorkoutFiles) <- hkWorkoutFiles$recordId
+## UPDATE THE ORIGINAL TABLE
+hkWorkout$fhToUpload <- TRUE
+hkWorkout$table@values <- hkWorkout$table@values[ hkWorkout$table@values$recordId %in% hkWorkoutFiles$recordId, ]
+hkWorkout$table@values$data.csv <- hkWorkoutFiles[ hkWorkout$table@values$recordId, "newFile"]
 
 
 ## motionTracker
@@ -313,10 +321,14 @@ smDisp <- cleanTable('syn4214144')
 
 
 
+
+
+
 #####
 ## LOG IN AS BRIDGE EXPORTER TO UPLOAD TABLES WITH FILE HANDLES OWNED BY THAT USER
 #####
 outputProjId <- "syn11269541"
+ud <- synapseClient:::getUploadDestinations(outputProjId)[[1]]
 
 storeThese <- list('Day One Survey' = dayOne,
                    'PAR-Q Survey' = parq,
@@ -327,9 +339,23 @@ storeThese <- list('Day One Survey' = dayOne,
                    'Satisfied Survey' = satisfied,
                    'APH Heart Age Survey' = heartAge,
                    'Six Minute Walk Activity' = smWalk,
-                   'Demographics Survey' = demographics)
+                   'Demographics Survey' = demographics,
+                   'HealthKit Data' = hkData,
+                   'HealthKit Sleep' = hkSleep,
+                   'HealthKit Workout' = hkWorkout,
+                   'Motion Tracker' = motionTracker,
+                   'Six Minute Walk - Displacement Vectors' = smDisp)
 
 storeThese <- lapply(storeThese, function(tt){
+  ## FIRST SEE IF THERE ARE FILE HANDLES TO UPLOAD
+  if(tt$fhToUpload){
+    fhs <- sapply(tt$table@values[[tt$fhCols]], function(fp){
+      fh <- synapseClient:::uploadAndAddToCacheMap(filePath=fp, uploadDestination=ud)
+      return(fh$id)
+    })
+    tt$table@values[[tt$fhCols]] <- fhs
+  }
+  
   ## USE TAB DELIMITED FOR CASES WHERE COMMAS ARE USED IN TEXT FIELDS
   tcs <- as.tableColumns(tt$table@values)
   for(i in 1:length(tcs$tableColumns)){
@@ -352,3 +378,4 @@ for(i in length(storeThese):1){
                                        columns=storeThese[[i]]$tableColumns),
                            values = storeThese[[i]]$fileHandleId))
 }
+
