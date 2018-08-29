@@ -155,7 +155,7 @@ hkDataFilesNew <- sapply(1:nrow(hkDataFiles), function(x){
   if( class(tryCatch) == "try-error" ){
     return(NA)
   }
-  fl <- file.path(getwd(), "data", "data", paste0(hkDataFiles$recordId[x], ".csv"))
+  fl <- file.path(path.expand("~/workspace/repos/mhc-sdata"), "data", "data", paste0(hkDataFiles$recordId[x], ".csv"))
   ids <- any(names(a)=="source")
   idsi <- any(names(a)=="sourceIdentifier")
   
@@ -207,7 +207,7 @@ hkSleepFilesNew <- sapply(1:nrow(hkSleepFiles), function(x){
   if( class(tryCatch) == "try-error" ){
     return(NA)
   }
-  fl <- file.path(getwd(), "data", "sleep", paste0(hkSleepFiles$recordId[x], ".csv"))
+  fl <- file.path(path.expand("~/workspace/repos/mhc-sdata"), "data", "sleep", paste0(hkSleepFiles$recordId[x], ".csv"))
   ids <- any(names(a)=="source")
   idsi <- any(names(a)=="sourceIdentifier")
   
@@ -265,7 +265,7 @@ hkWorkoutFilesNew <- sapply(1:nrow(hkWorkoutFiles), function(x){
   if( class(tryCatch) == "try-error" ){
     return(NA)
   }
-  fl <- file.path(getwd(), "data", "workout", paste0(hkWorkoutFiles$recordId[x], ".csv"))
+  fl <- file.path(path.expand("~/workspace/repos/mhc-sdata"), "data", "workout", paste0(hkWorkoutFiles$recordId[x], ".csv"))
   ids <- any(names(a)=="source")
   idsi <- any(names(a)=="sourceIdentifier")
   
